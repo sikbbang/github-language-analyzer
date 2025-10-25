@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import axios from 'axios';
 import { getRepoLanguages } from './githubFetcher.js';
 import { analyzeLanguages } from './languageAnalyzer.js';
 
@@ -9,6 +10,40 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+/**
+ * API endpoint to fetch a list of popular GitHub repositories.
+ * Fetches the top 100 repositories sorted by stars.
+ */
+app.get('/api/popular-repos', async (req, res) => {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) {
+    return res.status(500).json({ error: 'GitHub token not found in environment variables (GITHUB_TOKEN).' });
+  }
+
+  try {
+    const response = await axios.get('https://api.github.com/search/repositories', {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      params: {
+        q: 'stars:>1000', // A reasonable threshold for "popular"
+        sort: 'stars',
+        order: 'desc',
+        per_page: 100
+      }
+    });
+
+    const popularRepos = response.data.items.map(item => item.full_name);
+    res.json(popularRepos);
+
+  } catch (error) {
+    console.error('Error fetching popular repositories:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to fetch popular repositories.' });
+  }
+});
 
 /**
  * API endpoint to compare language usage across multiple GitHub repositories.

@@ -17,11 +17,17 @@
         }
         h1 {
             color: #1c1e21;
+            margin-bottom: 0.5rem;
+        }
+        p {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: #555;
         }
         #controls {
             display: flex;
             gap: 1rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             width: 100%;
             max-width: 600px;
         }
@@ -45,6 +51,45 @@
         button:hover {
             background-color: #166fe5;
         }
+        button:disabled {
+            background-color: #a0c3ed;
+            cursor: not-allowed;
+        }
+        #popular-repos-section {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        #popular-repos-list {
+            margin-top: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        #popular-repos-list ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #popular-repos-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        #popular-repos-list li:last-child {
+            border-bottom: none;
+        }
+        #popular-repos-list label {
+            cursor: pointer;
+            flex-grow: 1;
+        }
         #chart-container { 
             width: 100%; 
             max-width: 700px; 
@@ -65,6 +110,13 @@
         <button id="compare-btn">Compare</button>
     </div>
 
+    <div id="popular-repos-section">
+        <button id="fetch-popular-btn">Fetch Popular Repos</button>
+        <div id="popular-repos-list">
+            <!-- Popular repositories will be loaded here -->
+        </div>
+    </div>
+
     <div id="chart-container">
         <canvas id="language-chart"></canvas>
     </div>
@@ -72,8 +124,11 @@
     <script>
         const repoInput = document.getElementById('repo-input');
         const compareBtn = document.getElementById('compare-btn');
+        const fetchPopularBtn = document.getElementById('fetch-popular-btn');
+        const popularReposList = document.getElementById('popular-repos-list');
         const chartCanvas = document.getElementById('language-chart').getContext('2d');
         let languageChart = null;
+        let selectedPopularRepos = new Set(); // To keep track of selected popular repos
 
         compareBtn.addEventListener('click', handleCompare);
         repoInput.addEventListener('keypress', function(event) {
@@ -81,6 +136,7 @@
                 handleCompare();
             }
         });
+        fetchPopularBtn.addEventListener('click', fetchPopularRepos);
 
         async function handleCompare() {
             const repos = repoInput.value.trim();
@@ -107,6 +163,83 @@
                 compareBtn.disabled = false;
                 compareBtn.textContent = 'Compare';
             }
+        }
+
+        async function fetchPopularRepos() {
+            fetchPopularBtn.disabled = true;
+            fetchPopularBtn.textContent = 'Fetching...';
+            popularReposList.innerHTML = 'Loading popular repositories...';
+
+            try {
+                const response = await fetch('http://localhost:3000/api/popular-repos');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch popular repositories.');
+                }
+                const repos = await response.json();
+                displayPopularRepos(repos);
+            } catch (error) {
+                alert(`Error fetching popular repos: ${error.message}`);
+                console.error('Failed to fetch popular repos:', error);
+                popularReposList.innerHTML = 'Failed to load popular repositories.';
+            } finally {
+                fetchPopularBtn.disabled = false;
+                fetchPopularBtn.textContent = 'Fetch Popular Repos';
+            }
+        }
+
+        function displayPopularRepos(repos) {
+            popularReposList.innerHTML = ''; // Clear previous list
+            const ul = document.createElement('ul');
+            ul.style.listStyle = 'none';
+            ul.style.padding = '0';
+            ul.style.maxHeight = '200px';
+            ul.style.overflowY = 'auto';
+            ul.style.border = '1px solid #eee';
+            ul.style.borderRadius = '4px';
+            ul.style.marginTop = '1rem';
+            ul.style.width = '100%';
+            ul.style.maxWidth = '600px';
+
+            repos.forEach(repo => {
+                const li = document.createElement('li');
+                li.style.padding = '0.5rem';
+                li.style.borderBottom = '1px solid #eee';
+                li.style.cursor = 'pointer';
+                li.style.display = 'flex';
+                li.style.alignItems = 'center';
+                li.style.gap = '0.5rem';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `repo-${repo.replace(/\//g, '-')}`; // Sanitize ID
+                checkbox.value = repo;
+                checkbox.checked = selectedPopularRepos.has(repo);
+
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.textContent = repo;
+                label.style.cursor = 'pointer';
+
+                checkbox.addEventListener('change', (event) => {
+                    if (event.target.checked) {
+                        selectedPopularRepos.add(repo);
+                    } else {
+                        selectedPopularRepos.delete(repo);
+                    }
+                    updateRepoInput();
+                });
+
+                li.appendChild(checkbox);
+                li.appendChild(label);
+                ul.appendChild(li);
+            });
+            popularReposList.appendChild(ul);
+            updateRepoInput(); // Update input field initially
+        }
+
+        function updateRepoInput() {
+            repoInput.value = Array.from(selectedPopularRepos).join(', ');
         }
 
         function renderChart(data) {
