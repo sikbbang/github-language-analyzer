@@ -27,8 +27,7 @@
 - 개발 기간: 1일
 - 목표: GitHub의 인기 저장소 또는 자신의 저장소의 언어 분포 및 샤용량을 볼 수 있도록 한다.
  ## 개발 과정  
- ### Week 1 (날짜) 
- #### Day 1 - 프로젝트 기획 및 기능 구현
+ ### Week 1 (2025. 10. 25. ~ 26.)
  - **Gemini CLI 사용 프롬프트**:
     - 프로젝트 기획 및 초기설정
         - gemini 설치
@@ -82,11 +81,6 @@
             ✦ server.js 업데이트가 끝났습니다. 이제 npm 프로젝트를 초기화하고 의존성을 설치하겠습니다. npm init -y와 npm install express cors dotenv axios를 /home/ubuntu/web/github-language-analyzer 디렉토리에서 실행합니다.
             ✦ 프로젝트 폴더를 생성하고 파일들을 정리했습니다. 또한, 필요한 모든 패키지를 설치했습니다.
             ```
-
-
-
-
-
 
     - 기능 구현
         - Github Api
@@ -332,8 +326,7 @@
             * server.js 파일은 자체적으로 포그라운드 실행 메타데이터를 포함하고 있지 않기 때문에,
             * 이 스크립트를 통해 의존성을 확보하고 실행 루프를 시작합니다.
             ```
-            - server.js의 오류가 아닌 index.html, githubfetcher.js등 다른파일의 오류를 server.js의 오류로 판단하고 새로운 실행파일을 만들려고함.
-
+            - 오류 디버깅 중 server.js의 오류가 아닌 index.html, githubfetcher.js등 다른파일의 오류를 server.js의 오류로 판단하고 새로운 실행파일을 만들려고함.
 
 
     - 디자인
