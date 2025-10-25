@@ -78,6 +78,7 @@
             text-align: center;
         }
         #popular-repos-list, #my-repos-list {
+            height: 220px;
             margin-top: 1rem;
             background: white;
             border-radius: 8px;
@@ -230,20 +231,27 @@
 
         function addAllReposFromList(listElement) {
             const reposToAdd = Array.from(listElement.querySelectorAll('li')).map(li => li.textContent);
-            let currentRepos = getCachedRepos();
-            let newReposAdded = false;
+            if (reposToAdd.length === 0) {
+                alert('추가할 저장소가 없습니다.');
+                return;
+            }
 
-            reposToAdd.forEach(repo => {
-                if (!currentRepos.includes(repo)) {
-                    addRepoToCachedList_UI_Only(repo);
-                    currentRepos.push(repo);
-                    newReposAdded = true;
+            if (confirm(`${reposToAdd.length}개의 저장소를 모두 추가하시겠습니까?`)) {
+                let currentRepos = getCachedRepos();
+                let newReposAdded = false;
+
+                reposToAdd.forEach(repo => {
+                    if (!currentRepos.includes(repo)) {
+                        addRepoToCachedList_UI_Only(repo);
+                        currentRepos.push(repo);
+                        newReposAdded = true;
+                    }
+                });
+
+                if (newReposAdded) {
+                    saveCachedRepos(currentRepos);
+                    generateGraphFromCheckedRepos();
                 }
-            });
-
-            if (newReposAdded) {
-                saveCachedRepos(currentRepos);
-                generateGraphFromCheckedRepos();
             }
         }
 
@@ -272,16 +280,21 @@
 
         function handleAdd() {
             const customRepos = repoInput.value.trim().split(',').map(repo => repo.trim()).filter(Boolean);
-            if (customRepos.length === 0) return;
+            if (customRepos.length === 0) {
+                alert('추가할 저장소 이름을 입력해주세요.');
+                return;
+            }
 
-            const currentRepos = getCachedRepos();
-            const newRepos = customRepos.filter(repo => !currentRepos.includes(repo));
+            if (confirm(`"${customRepos.join(', ')}" 저장소를 추가하시겠습니까?`)) {
+                const currentRepos = getCachedRepos();
+                const newRepos = customRepos.filter(repo => !currentRepos.includes(repo));
 
-            newRepos.forEach(repo => addRepoToCachedList_UI_Only(repo));
-            saveCachedRepos([...currentRepos, ...newRepos]);
-            
-            generateGraphFromCheckedRepos();
-            repoInput.value = '';
+                newRepos.forEach(repo => addRepoToCachedList_UI_Only(repo));
+                saveCachedRepos([...currentRepos, ...newRepos]);
+                
+                generateGraphFromCheckedRepos();
+                repoInput.value = '';
+            }
         }
 
         function loadCachedReposFromStorage() {
@@ -415,11 +428,13 @@
                 li.style.borderBottom = '1px solid #eee';
                 li.textContent = repo;
                 li.addEventListener('click', () => {
-                    const currentRepos = getCachedRepos();
-                    if (!currentRepos.includes(repo)) {
-                        addRepoToCachedList_UI_Only(repo);
-                        saveCachedRepos([...currentRepos, repo]);
-                        generateGraphFromCheckedRepos();
+                    if (confirm(`"${repo}" 저장소를 추가하시겠습니까?`)) {
+                        const currentRepos = getCachedRepos();
+                        if (!currentRepos.includes(repo)) {
+                            addRepoToCachedList_UI_Only(repo);
+                            saveCachedRepos([...currentRepos, repo]);
+                            generateGraphFromCheckedRepos();
+                        }
                     }
                 });
                 ul.appendChild(li);
