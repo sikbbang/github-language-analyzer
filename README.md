@@ -22,7 +22,7 @@ Node.js 및 npm이 설치되어 있는지 확인하세요.
 
 1.  프로젝트 디렉토리로 이동합니다:
     ```bash
-    cd github-language-analyzer
+    cd src
     ```
 2.  의존성을 설치합니다:
     ```bash

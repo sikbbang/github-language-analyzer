@@ -1,5 +1,5 @@
-/github-language-analyzer/.env
-/github-language-analyzer/node_modules
-/github-language-analyzer/server.log
-/github-language-analyzer/nohup.out
-/github-language-analyzer/popular_repos.db
+/src/.env
+/src/node_modules
+/src/server.log
+/src/nohup.out
+/src/popular_repos.db
