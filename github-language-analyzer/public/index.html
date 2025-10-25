@@ -90,6 +90,28 @@
             cursor: pointer;
             flex-grow: 1;
         }
+        #cached-repos-list {
+            margin-top: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+        }
+        #cached-repos-ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #cached-repos-ul li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        #cached-repos-ul li:last-child {
+            border-bottom: none;
+        }
         #chart-container { 
             width: 100%; 
             max-width: 700px; 
@@ -107,67 +129,101 @@
     
     <div id="controls">
         <input type="text" id="repo-input" placeholder="owner/repo, owner2/repo2">
-        <button id="compare-btn">Compare</button>
+        <button id="add-btn">Add</button>
     </div>
 
     <div id="popular-repos-section">
-        <button id="fetch-popular-btn">Fetch Popular Repos</button>
+        <h2>Popular Repositories</h2>
         <div id="popular-repos-list">
             <!-- Popular repositories will be loaded here -->
         </div>
-    </div>
-
-    <div id="chart-container">
-        <canvas id="language-chart"></canvas>
+        <div id="cached-repos-list">
+            <h2>Currently Cached Repositories</h2>
+            <ul id="cached-repos-ul"></ul>
+        </div>
     </div>
 
     <script>
         const repoInput = document.getElementById('repo-input');
-        const compareBtn = document.getElementById('compare-btn');
-        const fetchPopularBtn = document.getElementById('fetch-popular-btn');
+        const addBtn = document.getElementById('add-btn');
         const popularReposList = document.getElementById('popular-repos-list');
-        const chartCanvas = document.getElementById('language-chart').getContext('2d');
+        const cachedReposUl = document.getElementById('cached-repos-ul');
         let languageChart = null;
         let selectedPopularRepos = new Set(); // To keep track of selected popular repos
+        let chartCanvas = null;
 
-        compareBtn.addEventListener('click', handleCompare);
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvasElement = document.getElementById('language-chart');
+            if (canvasElement) {
+                chartCanvas = canvasElement.getContext('2d');
+            }
+            fetchPopularRepos();
+        });
+
+        addBtn.addEventListener('click', handleAdd);
         repoInput.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
-                handleCompare();
+                handleAdd();
             }
         });
-        fetchPopularBtn.addEventListener('click', fetchPopularRepos);
 
-        async function handleCompare() {
-            const repos = repoInput.value.trim();
-            if (!repos) {
-                alert('Please enter repositories to compare.');
+        async function handleAdd() {
+            const customRepos = repoInput.value.trim().split(',').map(repo => repo.trim()).filter(repo => repo !== '');
+
+            if (customRepos.length === 0) {
+                alert('Please enter repositories to add.');
                 return;
             }
 
-            compareBtn.disabled = true;
-            compareBtn.textContent = 'Comparing...';
+            addBtn.disabled = true;
+            addBtn.textContent = 'Adding...';
 
             try {
-                const response = await fetch(`http://localhost:3000/api/compare?repos=${repos}`);
+                await fetch('http://localhost:3000/api/add-to-cache', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ repos: customRepos })
+                });
+                repoInput.value = ''; // Clear input after adding
+                fetchPopularRepos(); // Re-fetch to update cached list and graph
+            } catch (error) {
+                alert(`Error adding repos: ${error.message}`);
+                console.error('Add failed:', error);
+            } finally {
+                addBtn.disabled = false;
+                addBtn.textContent = 'Add';
+            }
+        }
+
+        async function generateGraphFromCheckedRepos() {
+            const checkedRepos = Array.from(document.querySelectorAll('#cached-repos-ul input[type="checkbox"]:checked'))
+                                    .map(checkbox => checkbox.value);
+            
+            if (checkedRepos.length === 0) {
+                if (languageChart) {
+                    languageChart.destroy();
+                    languageChart = null;
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/compare?repos=${checkedRepos.join(',')}`);
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch data.');
+                    throw new Error(errorData.error || 'Failed to fetch data for graph.');
                 }
                 const data = await response.json();
                 renderChart(data);
             } catch (error) {
-                alert(`Error: ${error.message}`);
-                console.error('Comparison failed:', error);
-            } finally {
-                compareBtn.disabled = false;
-                compareBtn.textContent = 'Compare';
+                alert(`Error generating graph: ${error.message}`);
+                console.error('Graph generation failed:', error);
             }
         }
 
         async function fetchPopularRepos() {
-            fetchPopularBtn.disabled = true;
-            fetchPopularBtn.textContent = 'Fetching...';
             popularReposList.innerHTML = 'Loading popular repositories...';
 
             try {
@@ -177,14 +233,13 @@
                     throw new Error(errorData.error || 'Failed to fetch popular repositories.');
                 }
                 const repos = await response.json();
-                displayPopularRepos(repos);
+                displayPopularRepos(repos); // Populate popular repos list
+                displayCachedRepos(repos); // Populate cached repos list with checkboxes and delete buttons
+                generateGraphFromCheckedRepos(); // Generate graph initially
             } catch (error) {
                 alert(`Error fetching popular repos: ${error.message}`);
                 console.error('Failed to fetch popular repos:', error);
                 popularReposList.innerHTML = 'Failed to load popular repositories.';
-            } finally {
-                fetchPopularBtn.disabled = false;
-                fetchPopularBtn.textContent = 'Fetch Popular Repos';
             }
         }
 
@@ -205,21 +260,40 @@
                 const li = document.createElement('li');
                 li.style.padding = '0.5rem';
                 li.style.borderBottom = '1px solid #eee';
-                li.style.cursor = 'pointer';
+                li.textContent = repo;
+                ul.appendChild(li);
+            });
+            popularReposList.appendChild(ul);
+        }
+
+        async function displayCachedRepos(repos) {
+            cachedReposUl.innerHTML = ''; // Clear previous cached list
+            selectedPopularRepos.clear(); // Clear selections when re-displaying
+
+            repos.forEach(repo => {
+                const li = document.createElement('li');
                 li.style.display = 'flex';
                 li.style.alignItems = 'center';
                 li.style.gap = '0.5rem';
 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.id = `repo-${repo.replace(/\//g, '-')}`; // Sanitize ID
+                checkbox.id = `cached-repo-${repo.replace(/\//g, '-')}`;
                 checkbox.value = repo;
-                checkbox.checked = selectedPopularRepos.has(repo);
+                checkbox.checked = true; // Checked by default
+                selectedPopularRepos.add(repo); // Add to selected by default
 
                 const label = document.createElement('label');
                 label.htmlFor = checkbox.id;
                 label.textContent = repo;
-                label.style.cursor = 'pointer';
+                label.style.flexGrow = '1';
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.style.marginLeft = 'auto';
+                deleteBtn.style.padding = '0.2rem 0.5rem';
+                deleteBtn.style.fontSize = '0.8rem';
+                deleteBtn.style.backgroundColor = '#dc3545';
 
                 checkbox.addEventListener('change', (event) => {
                     if (event.target.checked) {
@@ -227,19 +301,37 @@
                     } else {
                         selectedPopularRepos.delete(repo);
                     }
-                    updateRepoInput();
+                    generateGraphFromCheckedRepos(); // Regenerate graph on checkbox change
+                });
+
+                deleteBtn.addEventListener('click', async () => {
+                    if (confirm(`Are you sure you want to delete ${repo}?`)) {
+                        try {
+                            const response = await fetch(`http://localhost:3000/api/delete-cached-repo`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ repoFullName: repo })
+                            });
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || 'Failed to delete repository.');
+                            }
+                            // Re-fetch and display cached repos after deletion
+                            fetchPopularRepos();
+                        } catch (error) {
+                            alert(`Error deleting repo: ${error.message}`);
+                            console.error('Deletion failed:', error);
+                        }
+                    }
                 });
 
                 li.appendChild(checkbox);
                 li.appendChild(label);
-                ul.appendChild(li);
+                li.appendChild(deleteBtn);
+                cachedReposUl.appendChild(li);
             });
-            popularReposList.appendChild(ul);
-            updateRepoInput(); // Update input field initially
-        }
-
-        function updateRepoInput() {
-            repoInput.value = Array.from(selectedPopularRepos).join(', ');
         }
 
         function renderChart(data) {

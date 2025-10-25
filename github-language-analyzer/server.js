@@ -165,3 +165,47 @@ app.get('/api/compare', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch or analyze repository data. Check server logs for details.' });
   }
 });
+
+/**
+ * API endpoint to add repositories to the cache.
+ * Expects a JSON body with a 'repos' array of full_name strings.
+ * Example: POST /api/add-to-cache with body { "repos": ["owner/repo1", "owner2/repo2"] }
+ */
+app.post('/api/add-to-cache', async (req, res) => {
+    const { repos } = req.body;
+    if (!repos || !Array.isArray(repos)) {
+        return res.status(400).json({ error: 'Missing or invalid "repos" array in request body.' });
+    }
+
+    try {
+        const stmt = await db.prepare('INSERT OR IGNORE INTO popular_repos (full_name) VALUES (?)');
+        for (const repo of repos) {
+            await stmt.run(repo);
+        }
+        await stmt.finalize();
+        res.status(200).json({ message: 'Repositories added to cache.' });
+    } catch (error) {
+        console.error('Error adding repositories to cache:', error);
+        res.status(500).json({ error: 'Failed to add repositories to cache.' });
+    }
+});
+
+/**
+ * API endpoint to delete a repository from the cache.
+ * Expects a JSON body with a 'repoFullName' string.
+ * Example: POST /api/delete-cached-repo with body { "repoFullName": "owner/repo" }
+ */
+app.post('/api/delete-cached-repo', async (req, res) => {
+    const { repoFullName } = req.body;
+    if (!repoFullName) {
+        return res.status(400).json({ error: 'Missing "repoFullName" in request body.' });
+    }
+
+    try {
+        await db.run('DELETE FROM popular_repos WHERE full_name = ?', repoFullName);
+        res.status(200).json({ message: 'Repository deleted from cache.' });
+    } catch (error) {
+        console.error('Error deleting repository from cache:', error);
+        res.status(500).json({ error: 'Failed to delete repository from cache.' });
+    }
+});
