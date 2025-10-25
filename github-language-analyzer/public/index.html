@@ -39,6 +39,8 @@
             font-size: 1rem;
         }
         button { 
+            margin: 2px;
+            width:70px;
             padding: 0.75rem 1.5rem; 
             border: none;
             border-radius: 6px;
@@ -118,6 +120,7 @@
             list-style: none;
             padding: 0;
             margin: 0;
+            height: 200px;
             max-height: 200px;
             overflow-y: auto;
         }
@@ -178,6 +181,7 @@
                 <div id="cached-repos-list">
                     <div id="cached-repos-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-right: 130px;">
                         <button id="toggle-all-checkboxes" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">Toggle All</button>
+                        <button id="delete-selected-btn" style="padding: 0.3rem 0.7rem; font-size: 0.85rem; background-color: #dc3545;">Delete Selected</button>
                         <h2>Currently Cached Repositories</h2>
                     </div>
                     <ul id="cached-repos-ul"></ul>
@@ -197,6 +201,7 @@
         const myReposList = document.getElementById('my-repos-list'); // Added this line
         const cachedReposUl = document.getElementById('cached-repos-ul');
         const toggleAllCheckboxesBtn = document.getElementById('toggle-all-checkboxes'); // Added this line
+        const deleteSelectedBtn = document.getElementById('delete-selected-btn'); // Added this line
         const chartInstances = new Map();
         const CACHE_KEY = 'cachedRepos';
 
@@ -210,6 +215,30 @@
         addBtn.addEventListener('click', handleAdd);
         repoInput.addEventListener('keypress', e => e.key === 'Enter' && handleAdd());
         toggleAllCheckboxesBtn.addEventListener('click', toggleAllCheckboxes); // Added this line
+        deleteSelectedBtn.addEventListener('click', handleDeleteSelected); // Added this line
+
+        function handleDeleteSelected() {
+            const checkboxes = document.querySelectorAll('#cached-repos-ul input[type="checkbox"]:checked');
+            const reposToDelete = Array.from(checkboxes).map(cb => cb.value);
+
+            if (reposToDelete.length === 0) {
+                alert('No repositories selected to delete.');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to remove ${reposToDelete.length} selected repositories?`)) {
+                let currentRepos = getCachedRepos();
+                const updatedRepos = currentRepos.filter(repo => !reposToDelete.includes(repo));
+                saveCachedRepos(updatedRepos);
+
+                // Remove from UI
+                reposToDelete.forEach(repo => {
+                    const li = document.getElementById(`cached-repo-${repo.replace(/\//g, '-')}`).closest('li');
+                    if (li) li.remove();
+                });
+                generateGraphFromCheckedRepos();
+            }
+        }
 
         function handleAdd() {
             const customRepos = repoInput.value.trim().split(',').map(repo => repo.trim()).filter(Boolean);
@@ -355,6 +384,14 @@
                 li.style.padding = '0.5rem';
                 li.style.borderBottom = '1px solid #eee';
                 li.textContent = repo;
+                li.addEventListener('click', () => {
+                    const currentRepos = getCachedRepos();
+                    if (!currentRepos.includes(repo)) {
+                        addRepoToCachedList_UI_Only(repo);
+                        saveCachedRepos([...currentRepos, repo]);
+                        generateGraphFromCheckedRepos();
+                    }
+                });
                 ul.appendChild(li);
             });
             listElement.appendChild(ul);
