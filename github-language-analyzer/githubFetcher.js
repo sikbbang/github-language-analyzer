@@ -1,5 +1,22 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
 import axios from 'axios';
-import 'dotenv/config';
+
+console.log('Loaded GITHUB_TOKEN:', process.env.GITHUB_TOKEN);
+console.log('Loaded GITHUB_USERNAME:', process.env.GITHUB_USERNAME);
+
+const GITHUB_USERNAME = process.env.GITHUB_USERNAME;
+
+if (!process.env.GITHUB_TOKEN || !GITHUB_USERNAME) {
+  console.error("FATAL: GITHUB_TOKEN and GITHUB_USERNAME environment variables must be set in the .env file.");
+  process.exit(1);
+}
 
 /**
  * Fetches the top 10 most starred GitHub repositories.
@@ -29,6 +46,46 @@ async function getPopularRepos() {
     return response.data.items.map(item => item.full_name);
   } catch (error) {
     console.error('Error fetching popular repos from GitHub:', error.message);
+    throw error;
+  }
+}
+
+async function getUserRepos() {
+  const token = process.env.GITHUB_TOKEN;
+  const username = process.env.GITHUB_USERNAME;
+
+  if (!token || !username) {
+    return Promise.reject('GitHub token or username not found');
+  }
+
+  let allRepos = [];
+  let url = `https://api.github.com/user/repos?type=all&per_page=100`; // Fetch for specific username
+
+  try {
+    while (url) {
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+
+      allRepos = allRepos.concat(response.data.map(item => item.full_name));
+
+      const linkHeader = response.headers.link;
+      url = null;
+      if (linkHeader) {
+        const nextLink = linkHeader.split(',').find(s => s.includes('rel="next"'));
+        if (nextLink) {
+          url = nextLink.match(/<(.+)>/)[1];
+        }
+      }
+    }
+
+    return allRepos;
+  } catch (error) {
+    console.error(`Error fetching repos for user ${username} from GitHub:`, error.message);
     throw error;
   }
 }
@@ -67,7 +124,7 @@ async function getRepoLanguages(owner, repo) {
   }
 }
 
-export { getRepoLanguages, getPopularRepos };
+export { getRepoLanguages, getPopularRepos, getUserRepos };
 
 /*
 // Example usage:

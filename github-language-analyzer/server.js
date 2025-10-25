@@ -1,62 +1,27 @@
+console.log('server.js is being executed!');
+
 import express from 'express';
 import cors from 'cors';
-import { getRepoLanguages, getPopularRepos } from './githubFetcher.js';
+import { getRepoLanguages, getPopularRepos, getUserRepos } from './githubFetcher.js';
 import { analyzeLanguages } from './languageAnalyzer.js';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import dotenv from 'dotenv';
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
-// Database setup and initial seeding
-let db;
-(async () => {
-    try {
-        console.log('Initializing database...');
-        db = await open({
-            filename: './popular_repos.db',
-            driver: sqlite3.Database
-        });
-        console.log('Database initialized.');
-
-        await db.exec(`
-            CREATE TABLE IF NOT EXISTS popular_repos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                full_name TEXT NOT NULL UNIQUE,
-                fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-        console.log("Table 'popular_repos' created/ensured.");
-
-        // Check if the database is empty and seed it if necessary
-        const repoCount = await db.get('SELECT COUNT(*) as count FROM popular_repos');
-        if (repoCount.count === 0) {
-            console.log('No popular repos found in DB, seeding now...');
-            const popularRepos = await getPopularRepos();
-            const stmt = await db.prepare('INSERT INTO popular_repos (full_name) VALUES (?)');
-            for (const repo of popularRepos) {
-                await stmt.run(repo);
-            }
-            await stmt.finalize();
-            console.log('Database seeded with popular repositories.');
-        }
-
-        app.listen(port, () => {
-            console.log(`Server listening at http://localhost:${port}`);
-        });
-    } catch (error) {
-        console.error('Failed to initialize database or start server:', error);
-        process.exit(1);
-    }
-})();
-
-/**
- * API endpoint to fetch the list of all cached GitHub repositories.
- */
 app.get('/api/popular-repos', async (req, res) => {
     try {
         const repos = await db.all('SELECT full_name FROM popular_repos ORDER BY id');
@@ -65,6 +30,19 @@ app.get('/api/popular-repos', async (req, res) => {
     } catch (error) {
         console.error('Error in /api/popular-repos:', error.message);
         res.status(500).json({ error: 'Failed to fetch repositories from database.' });
+    }
+});
+
+/**
+ * API endpoint to fetch the list of the authenticated user's repositories.
+ */
+app.get('/api/my-repos', async (req, res) => {
+    try {
+        const myRepos = await getUserRepos();
+        res.json(myRepos);
+    } catch (error) {
+        console.error('Error in /api/my-repos:', error.message);
+        res.status(500).json({ error: 'Failed to fetch your repositories from GitHub.' });
     }
 });
 
@@ -104,4 +82,46 @@ app.get('/api/compare', async (req, res) => {
   }
 });
 
+// Serve static files after API routes
+app.use(express.static('public'));
 
+// Database setup and initial seeding
+let db;
+(async () => {
+    try {
+        console.log('Initializing database...');
+        db = await open({
+            filename: './popular_repos.db',
+            driver: sqlite3.Database
+        });
+        console.log('Database initialized.');
+
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS popular_repos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL UNIQUE,
+                fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+        console.log("Table 'popular_repos' created/ensured.");
+
+        // On every server start, clear the table and seed it with the latest popular repos.
+        console.log('Clearing and seeding popular repos table...');
+        await db.exec('DELETE FROM popular_repos');
+        const popularRepos = await getPopularRepos();
+        const stmt = await db.prepare('INSERT INTO popular_repos (full_name) VALUES (?)');
+        for (const repo of popularRepos) {
+            await stmt.run(repo);
+        }
+        await stmt.finalize();
+        console.log('Database seeded with popular repositories.');
+
+    } catch (error) {
+        console.error('Failed to initialize database or start server:', error);
+        process.exit(1);
+    }
+})();
+
+app.listen(port, () => {
+    console.log(`Server listening at http://localhost:${port}`);
+});

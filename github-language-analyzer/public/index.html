@@ -9,7 +9,7 @@
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex; 
-            flex-direction: column; 
+            flex-direction: column; /* Arrange main sections vertically */
             align-items: center; 
             margin: 0;
             padding: 2rem;
@@ -55,13 +55,26 @@
             background-color: #a0c3ed;
             cursor: not-allowed;
         }
-        #popular-repos-section {
+        #top-section-container {
+            display: flex;
+            gap: 2rem;
             width: 100%;
-            max-width: 600px;
+            max-width: 1200px; /* Adjust as needed */
             margin-bottom: 2rem;
+            align-items: flex-start;
+        }
+        #repo-lists-container {
+            display: flex;
+            flex-direction: column; /* Arrange popular and my repos vertically within this container */
+            gap: 2rem;
+            flex: 1; /* Take up available space */
+            min-width: 400px;
+        }
+        #popular-repos-section, #my-repos-section {
+            flex: 1;
             text-align: center;
         }
-        #popular-repos-list {
+        #popular-repos-list, #my-repos-list {
             margin-top: 1rem;
             background: white;
             border-radius: 8px;
@@ -71,39 +84,41 @@
             overflow-y: auto;
             text-align: left;
         }
-        #popular-repos-list ul {
+        #popular-repos-list ul, #my-repos-list ul {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-        #popular-repos-list li {
+        #popular-repos-list li, #my-repos-list li {
             padding: 0.5rem 0;
             border-bottom: 1px solid #eee;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            cursor: pointer;
         }
-        #popular-repos-list li:last-child {
+        #popular-repos-list li:hover, #my-repos-list li:hover {
+            background-color: #f0f2f5;
+        }
+        #popular-repos-list li:last-child, #my-repos-list li:last-child {
             border-bottom: none;
         }
-        #popular-repos-list label {
-            cursor: pointer;
-            flex-grow: 1;
-        }
         #cached-repos-list {
-            margin-top: 1rem;
+            width: 100%;
+            max-width: 600px; /* Match controls max-width */
+            margin-bottom: 2rem;
+            text-align: center;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             padding: 1rem;
-            max-height: 200px;
-            overflow-y: auto;
-            text-align: left;
         }
         #cached-repos-ul {
             list-style: none;
             padding: 0;
             margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
         }
         #cached-repos-ul li {
             padding: 0.5rem 0;
@@ -113,8 +128,8 @@
             border-bottom: none;
         }
         #chart-container { 
-            width: 100%; 
-            max-width: 700px; 
+            flex: 1; /* Take up available space */
+            min-width: 400px;
             background: white;
             padding: 1.5rem;
             border-radius: 8px;
@@ -132,32 +147,46 @@
         <button id="add-btn">Add</button>
     </div>
 
-    <div id="popular-repos-section">
-        <h2>Popular Repositories</h2>
-        <div id="popular-repos-list">
-            <!-- Popular repositories will be loaded here -->
+    <div id="top-section-container">
+        <div id="repo-lists-container">
+            <div id="popular-repos-section">
+                <h2>Popular Repositories</h2>
+                <div id="popular-repos-list">
+                    <!-- Popular repositories will be loaded here -->
+                </div>
+            </div>
+
+            <div id="my-repos-section">
+                <h2>My Repositories</h2>
+                <div id="my-repos-list">
+                    <!-- My repositories will be loaded here -->
+                </div>
+            </div>
         </div>
-        <div id="cached-repos-list">
-            <h2>Currently Cached Repositories</h2>
-            <ul id="cached-repos-ul"></ul>
+
+        <div id="chart-container">
+            <canvas id="language-chart"></canvas>
+            <div id="chart-message" style="text-align: center; padding: 1rem;"></div>
         </div>
     </div>
 
-    <div id="chart-container">
-        <canvas id="language-chart"></canvas>
-        <div id="chart-message" style="text-align: center; padding: 1rem;"></div>
+    <div id="cached-repos-list">
+        <h2>Currently Cached Repositories</h2>
+        <ul id="cached-repos-ul"></ul>
     </div>
 
     <script>
         const repoInput = document.getElementById('repo-input');
         const addBtn = document.getElementById('add-btn');
         const popularReposList = document.getElementById('popular-repos-list');
+        const myReposList = document.getElementById('my-repos-list'); // Added this line
         const cachedReposUl = document.getElementById('cached-repos-ul');
         const chartInstances = new Map();
         const CACHE_KEY = 'cachedRepos';
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchPopularRepos();
+            fetchMyRepos(); // Added this line
             loadCachedReposFromStorage();
             generateGraphFromCheckedRepos();
         });
@@ -272,15 +301,28 @@
                 const response = await fetch('http://localhost:3000/api/popular-repos');
                 if (!response.ok) throw new Error((await response.json()).error || 'Failed to fetch popular reps.');
                 const repos = await response.json();
-                displayPopularRepos(repos);
+                displayReposInList(popularReposList, repos);
             } catch (error) {
                 console.error('Failed to fetch popular repos:', error);
                 popularReposList.innerHTML = 'Failed to load popular repositories.';
             }
         }
 
-        function displayPopularRepos(repos) {
-            popularReposList.innerHTML = '';
+        async function fetchMyRepos() {
+            myReposList.innerHTML = 'Loading your repositories...';
+            try {
+                const response = await fetch('http://localhost:3000/api/my-repos');
+                if (!response.ok) throw new Error((await response.json()).error || 'Failed to fetch your repos.');
+                const repos = await response.json();
+                displayReposInList(myReposList, repos);
+            } catch (error) {
+                console.error('Failed to fetch your repos:', error);
+                myReposList.innerHTML = 'Failed to load your repositories.';
+            }
+        }
+
+        function displayReposInList(listElement, repos) {
+            listElement.innerHTML = '';
             const ul = document.createElement('ul');
             Object.assign(ul.style, { listStyle: 'none', padding: '0', maxHeight: '200px', overflowY: 'auto', border: '1px solid #eee', borderRadius: '4px', marginTop: '1rem' });
 
@@ -291,7 +333,7 @@
                 li.textContent = repo;
                 ul.appendChild(li);
             });
-            popularReposList.appendChild(ul);
+            listElement.appendChild(ul);
         }
 
         function renderChart(canvasId, chartTitle, data) {
