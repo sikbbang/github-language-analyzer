@@ -166,6 +166,7 @@
             <div class="top">
                 <div id="popular-repos-section">
                     <h2>Popular Repositories</h2>
+                    <button id="add-all-popular-btn" style="padding: 0.3rem 0.7rem; font-size: 1.1rem; margin-bottom: 1rem; width: 200px;">모두 추가</button>
                     <div id="popular-repos-list">
                         <!-- Popular repositories will be loaded here -->
                     </div>
@@ -173,6 +174,7 @@
 
                 <div id="my-repos-section">
                     <h2>My Repositories</h2>
+                    <button id="add-all-my-repos-btn" style="padding: 0.3rem 0.7rem; font-size: 1.1rem; margin-bottom: 1rem; width: 200px;">모두 추가</button>
                     <div id="my-repos-list">
                         <!-- My repositories will be loaded here -->
                     </div>
@@ -219,6 +221,31 @@
         repoInput.addEventListener('keypress', e => e.key === 'Enter' && handleAdd());
         toggleAllCheckboxesBtn.addEventListener('click', toggleAllCheckboxes); // Added this line
         deleteSelectedBtn.addEventListener('click', handleDeleteSelected); // Added this line
+
+        const addAllPopularBtn = document.getElementById('add-all-popular-btn');
+        const addAllMyReposBtn = document.getElementById('add-all-my-repos-btn');
+
+        addAllPopularBtn.addEventListener('click', () => addAllReposFromList(popularReposList));
+        addAllMyReposBtn.addEventListener('click', () => addAllReposFromList(myReposList));
+
+        function addAllReposFromList(listElement) {
+            const reposToAdd = Array.from(listElement.querySelectorAll('li')).map(li => li.textContent);
+            let currentRepos = getCachedRepos();
+            let newReposAdded = false;
+
+            reposToAdd.forEach(repo => {
+                if (!currentRepos.includes(repo)) {
+                    addRepoToCachedList_UI_Only(repo);
+                    currentRepos.push(repo);
+                    newReposAdded = true;
+                }
+            });
+
+            if (newReposAdded) {
+                saveCachedRepos(currentRepos);
+                generateGraphFromCheckedRepos();
+            }
+        }
 
         function handleDeleteSelected() {
             const checkboxes = document.querySelectorAll('#cached-repos-ul input[type="checkbox"]:checked');
