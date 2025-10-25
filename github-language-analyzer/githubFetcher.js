@@ -22,7 +22,7 @@ if (!process.env.GITHUB_TOKEN || !GITHUB_USERNAME) {
  * Fetches the top 10 most starred GitHub repositories.
  * @returns {Promise<string[]>} A promise that resolves to an array of repository full names (e.g., 'owner/repo').
  */
-async function getPopularRepos() {
+async function getPopularRepos(limit = 10) { // Default to 10 if no limit is provided
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     return Promise.reject('GitHub token not found in environment variables (GITHUB_TOKEN)');
@@ -40,7 +40,7 @@ async function getPopularRepos() {
         q: 'stars:>1',
         sort: 'stars',
         order: 'desc',
-        per_page: 10
+        per_page: limit // Use the provided limit
       }
     });
     return response.data.items.map(item => item.full_name);

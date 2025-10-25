@@ -191,15 +191,36 @@
             <div class="top">
                 <div id="popular-repos-section">
                     <h2>Popular Repositories</h2>
-                    <button id="add-all-popular-btn" style="padding: 0.3rem 0.7rem; font-size: 1.1rem; margin-bottom: 1rem; width: 200px;">모두 추가</button>
+                    <div style="margin: auto;display: flex;height: 55px;justify-content: space-evenly;">
+                        <div style="height: 25px;margin: auto;">
+                            <label for="popular-repos-limit">표시 개수:</label>
+                            <select id="popular-repos-limit" style="margin-left: 10px;">
+                                <option value="10" selected>10</option>
+                                <option value="100">100</option>
+                                <option value="1000">1000</option>
+                            </select>
+                        </div>
+                        <button id="add-all-popular-btn" style="height:35px;width:130px;padding: 0.3rem 0.7rem; font-size: 0.85rem; margin:auto;margin-bottom: 1rem;">모두 추가</button>
+                    </div>
                     <div id="popular-repos-list">
                         <!-- Popular repositories will be loaded here -->
                     </div>
                 </div>
 
                 <div id="my-repos-section">
-                    <h2>My Repositories</h2>
-                    <button id="add-all-my-repos-btn" style="padding: 0.3rem 0.7rem; font-size: 1.1rem; margin-bottom: 1rem; width: 200px;">모두 추가</button>
+                    <h2>
+                        <a style="text-decoration: none;color: inherit;display: flex;justify-content: center;" href="https://github.com/sikbbang?tab=repositories">
+                            <div style="display: flex;justify-content: center;">
+                                <img style="width: 52px; margin:auto;" src="pngegg.png">
+                            </div>
+                            <div>
+                                My Repositories
+                            </div>
+                        </a>
+                    </h2>
+                    <div style="height:55px;">
+                        <button id="add-all-my-repos-btn" style="padding: 0.3rem 0.7rem; font-size: 1.1rem; margin-bottom: 1rem; width: 200px;">모두 추가</button>
+                    </div>
                     <div id="my-repos-list">
                         <!-- My repositories will be loaded here -->
                     </div>
@@ -421,10 +442,10 @@
             }
         }
 
-        async function fetchPopularRepos() {
+        async function fetchPopularRepos(limit = 10) { // Default to 10 if no limit is provided
             popularReposList.innerHTML = 'Loading popular repositories...';
             try {
-                const response = await fetch('http://localhost:3000/api/popular-repos');
+                const response = await fetch(`http://localhost:3000/api/popular-repos?limit=${limit}`);
                 if (!response.ok) throw new Error((await response.json()).error || 'Failed to fetch popular reps.');
                 const repos = await response.json();
                 displayReposInList(popularReposList, repos);

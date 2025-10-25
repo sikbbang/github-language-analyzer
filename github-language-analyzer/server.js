@@ -23,9 +23,10 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/popular-repos', async (req, res) => {
+    const limit = parseInt(req.query.limit) || 10; // Default to 10 if no limit is provided
     try {
-        const repos = await db.all('SELECT full_name FROM popular_repos ORDER BY id');
-        console.log('Serving all cached repos from database.');
+        const repos = await db.all(`SELECT full_name FROM popular_repos ORDER BY id LIMIT ${limit}`);
+        console.log(`Serving ${limit} cached popular repos from database.`);
         res.json(repos.map(r => r.full_name));
     } catch (error) {
         console.error('Error in /api/popular-repos:', error.message);
@@ -108,7 +109,7 @@ let db;
         // On every server start, clear the table and seed it with the latest popular repos.
         console.log('Clearing and seeding popular repos table...');
         await db.exec('DELETE FROM popular_repos');
-        const popularRepos = await getPopularRepos();
+        const popularRepos = await getPopularRepos(1000); // Fetch up to 1000 popular repos for seeding
         const stmt = await db.prepare('INSERT INTO popular_repos (full_name) VALUES (?)');
         for (const repo of popularRepos) {
             await stmt.run(repo);
