@@ -59,7 +59,7 @@
             display: flex;
             gap: 2rem;
             width: 100%;
-            max-width: 1200px; /* Adjust as needed */
+            max-width: 1400px; /* Adjust as needed */
             margin-bottom: 2rem;
             align-items: flex-start;
         }
@@ -83,6 +83,7 @@
             max-height: 300px;
             overflow-y: auto;
             text-align: left;
+            margin: 10px;
         }
         #popular-repos-list ul, #my-repos-list ul {
             list-style: none;
@@ -129,11 +130,19 @@
         }
         #chart-container { 
             flex: 1; /* Take up available space */
+            margin: auto;
             min-width: 400px;
             background: white;
             padding: 1.5rem;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .top {
+            display: flex;
+        }
+        .bottom {
+            display: flex;
+            justify-content: center;
         }
     </style>
 </head>
@@ -149,30 +158,34 @@
 
     <div id="top-section-container">
         <div id="repo-lists-container">
-            <div id="popular-repos-section">
-                <h2>Popular Repositories</h2>
-                <div id="popular-repos-list">
-                    <!-- Popular repositories will be loaded here -->
+            <div class="top">
+                <div id="popular-repos-section">
+                    <h2>Popular Repositories</h2>
+                    <div id="popular-repos-list">
+                        <!-- Popular repositories will be loaded here -->
+                    </div>
+                </div>
+
+                <div id="my-repos-section">
+                    <h2>My Repositories</h2>
+                    <div id="my-repos-list">
+                        <!-- My repositories will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="bottom">
+                <div id="cached-repos-list">
+                    <h2>Currently Cached Repositories</h2>
+                    <ul id="cached-repos-ul"></ul>
                 </div>
             </div>
 
-            <div id="my-repos-section">
-                <h2>My Repositories</h2>
-                <div id="my-repos-list">
-                    <!-- My repositories will be loaded here -->
-                </div>
-            </div>
         </div>
 
         <div id="chart-container">
             <canvas id="language-chart"></canvas>
             <div id="chart-message" style="text-align: center; padding: 1rem;"></div>
         </div>
-    </div>
-
-    <div id="cached-repos-list">
-        <h2>Currently Cached Repositories</h2>
-        <ul id="cached-repos-ul"></ul>
     </div>
 
     <script>
