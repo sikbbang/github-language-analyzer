@@ -32,6 +32,7 @@
     프로젝트 루트에 `.env` 파일을 생성하고 GitHub 개인 액세스 토큰을 추가하세요.
     ```
     GITHUB_TOKEN=your_personal_access_token
+    GITHUB_USERNAME=your_github_username
     ```
 
 3.  **서버 실행:**
