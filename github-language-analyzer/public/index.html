@@ -285,6 +285,12 @@
                 return;
             }
 
+            const invalidRepos = customRepos.filter(repo => !/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(repo));
+            if (invalidRepos.length > 0) {
+                alert(`유효하지 않은 저장소 이름 형식입니다: ${invalidRepos.join(', ')}\n\n올바른 형식: owner/repo`);
+                return;
+            }
+
             if (confirm(`"${customRepos.join(', ')}" 저장소를 추가하시겠습니까?`)) {
                 const currentRepos = getCachedRepos();
                 const newRepos = customRepos.filter(repo => !currentRepos.includes(repo));
