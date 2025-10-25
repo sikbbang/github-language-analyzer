@@ -231,7 +231,7 @@
                     <div id="cached-repos-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-right: 210px;">
                         <div style="display: flex;flex-direction: column-reverse;">
                             <button id="toggle-all-checkboxes" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">모두 선택</button>
-                            <button id="delete-selected-btn" style="padding: 0.3rem 0.7rem; font-size: 0.85rem; background-color: #dc3545;">선택 삭제</button>
+                            <button id="delete-selected-btn" style="padding: 0.3rem 0.7rem; font-size: 0.85rem; background-color: #dd5757;">선택 삭제</button>
                         </div>
                         <h2>Saved Repositories</h2>
                     </div>
@@ -391,7 +391,7 @@
 
             const deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Delete';
-            Object.assign(deleteBtn.style, { marginLeft: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', backgroundColor: '#dc3545' });
+            Object.assign(deleteBtn.style, { marginLeft: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', backgroundColor: '#dd5757' });
 
             checkbox.addEventListener('change', generateGraphFromCheckedRepos);
 
