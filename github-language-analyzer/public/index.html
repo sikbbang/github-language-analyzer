@@ -143,118 +143,146 @@
         </div>
     </div>
 
+    <div id="chart-container">
+        <canvas id="language-chart"></canvas>
+        <div id="chart-message" style="text-align: center; padding: 1rem;"></div>
+    </div>
+
     <script>
         const repoInput = document.getElementById('repo-input');
         const addBtn = document.getElementById('add-btn');
         const popularReposList = document.getElementById('popular-repos-list');
         const cachedReposUl = document.getElementById('cached-repos-ul');
-        let languageChart = null;
-        let selectedPopularRepos = new Set(); // To keep track of selected popular repos
-        let chartCanvas = null;
+        const chartInstances = new Map();
+        const CACHE_KEY = 'cachedRepos';
 
         document.addEventListener('DOMContentLoaded', () => {
-            const canvasElement = document.getElementById('language-chart');
-            if (canvasElement) {
-                chartCanvas = canvasElement.getContext('2d');
-            }
             fetchPopularRepos();
+            loadCachedReposFromStorage();
+            generateGraphFromCheckedRepos();
         });
 
         addBtn.addEventListener('click', handleAdd);
-        repoInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                handleAdd();
-            }
-        });
+        repoInput.addEventListener('keypress', e => e.key === 'Enter' && handleAdd());
 
-        async function handleAdd() {
-            const customRepos = repoInput.value.trim().split(',').map(repo => repo.trim()).filter(repo => repo !== '');
+        function handleAdd() {
+            const customRepos = repoInput.value.trim().split(',').map(repo => repo.trim()).filter(Boolean);
+            if (customRepos.length === 0) return;
 
-            if (customRepos.length === 0) {
-                alert('Please enter repositories to add.');
-                return;
-            }
+            const currentRepos = getCachedRepos();
+            const newRepos = customRepos.filter(repo => !currentRepos.includes(repo));
 
-            addBtn.disabled = true;
-            addBtn.textContent = 'Adding...';
+            newRepos.forEach(repo => addRepoToCachedList_UI_Only(repo));
+            saveCachedRepos([...currentRepos, ...newRepos]);
+            
+            generateGraphFromCheckedRepos();
+            repoInput.value = '';
+        }
 
-            try {
-                await fetch('http://localhost:3000/api/add-to-cache', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ repos: customRepos })
-                });
-                repoInput.value = ''; // Clear input after adding
-                fetchPopularRepos(); // Re-fetch to update cached list and graph
-            } catch (error) {
-                alert(`Error adding repos: ${error.message}`);
-                console.error('Add failed:', error);
-            } finally {
-                addBtn.disabled = false;
-                addBtn.textContent = 'Add';
-            }
+        function loadCachedReposFromStorage() {
+            const repos = getCachedRepos();
+            repos.forEach(repo => addRepoToCachedList_UI_Only(repo));
+        }
+
+        function getCachedRepos() {
+            return JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+        }
+
+        function saveCachedRepos(repos) {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(repos));
+        }
+
+        function addRepoToCachedList_UI_Only(repo) {
+            if (document.getElementById(`cached-repo-${repo.replace(/\//g, '-')}`)) return;
+
+            const li = document.createElement('li');
+            Object.assign(li.style, { display: 'flex', alignItems: 'center', gap: '0.5rem' });
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `cached-repo-${repo.replace(/\//g, '-')}`;
+            checkbox.value = repo;
+            checkbox.checked = true;
+
+            const label = document.createElement('label');
+            label.htmlFor = checkbox.id;
+            label.textContent = repo;
+            label.style.flexGrow = '1';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            Object.assign(deleteBtn.style, { marginLeft: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.8rem', backgroundColor: '#dc3545' });
+
+            checkbox.addEventListener('change', generateGraphFromCheckedRepos);
+
+            deleteBtn.addEventListener('click', () => {
+                if (confirm(`Are you sure you want to remove ${repo}?`)) {
+                    const currentRepos = getCachedRepos();
+                    saveCachedRepos(currentRepos.filter(r => r !== repo));
+                    li.remove();
+                    generateGraphFromCheckedRepos();
+                }
+            });
+
+            li.appendChild(checkbox);
+            li.appendChild(label);
+            li.appendChild(deleteBtn);
+            cachedReposUl.appendChild(li);
         }
 
         async function generateGraphFromCheckedRepos() {
-            const checkedRepos = Array.from(document.querySelectorAll('#cached-repos-ul input[type="checkbox"]:checked'))
-                                    .map(checkbox => checkbox.value);
-            
+            const messageEl = document.getElementById('chart-message');
+            const checkedRepos = Array.from(document.querySelectorAll('#cached-repos-ul input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            if (chartInstances.has('language-chart')) {
+                chartInstances.get('language-chart').destroy();
+                chartInstances.delete('language-chart');
+            }
+            messageEl.textContent = '';
+
             if (checkedRepos.length === 0) {
-                if (languageChart) {
-                    languageChart.destroy();
-                    languageChart = null;
-                }
+                messageEl.textContent = 'Add or select repositories to see the language distribution.';
                 return;
             }
 
+            messageEl.textContent = 'Loading chart data...';
+
             try {
-                const response = await fetch(`http://localhost:3000/api/compare?repos=${checkedRepos.join(',')}`);
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch data for graph.');
-                }
+                const repoQuery = encodeURIComponent(checkedRepos.join(','));
+                const response = await fetch(`http://localhost:3000/api/compare?repos=${repoQuery}`);
+                if (!response.ok) throw new Error((await response.json()).error || 'Failed to fetch graph data.');
+                
                 const data = await response.json();
-                renderChart(data);
+                messageEl.textContent = '';
+
+                if (data && Object.keys(data).length > 0) {
+                    renderChart('language-chart', 'Language Usage Distribution', data);
+                } else {
+                    messageEl.textContent = 'No language data found for the selected repositories.';
+                }
             } catch (error) {
-                alert(`Error generating graph: ${error.message}`);
+                messageEl.textContent = `Error: ${error.message}`;
                 console.error('Graph generation failed:', error);
             }
         }
 
         async function fetchPopularRepos() {
             popularReposList.innerHTML = 'Loading popular repositories...';
-
             try {
                 const response = await fetch('http://localhost:3000/api/popular-repos');
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch popular repositories.');
-                }
+                if (!response.ok) throw new Error((await response.json()).error || 'Failed to fetch popular reps.');
                 const repos = await response.json();
-                displayPopularRepos(repos); // Populate popular repos list
-                displayCachedRepos(repos); // Populate cached repos list with checkboxes and delete buttons
-                generateGraphFromCheckedRepos(); // Generate graph initially
+                displayPopularRepos(repos);
             } catch (error) {
-                alert(`Error fetching popular repos: ${error.message}`);
                 console.error('Failed to fetch popular repos:', error);
                 popularReposList.innerHTML = 'Failed to load popular repositories.';
             }
         }
 
         function displayPopularRepos(repos) {
-            popularReposList.innerHTML = ''; // Clear previous list
+            popularReposList.innerHTML = '';
             const ul = document.createElement('ul');
-            ul.style.listStyle = 'none';
-            ul.style.padding = '0';
-            ul.style.maxHeight = '200px';
-            ul.style.overflowY = 'auto';
-            ul.style.border = '1px solid #eee';
-            ul.style.borderRadius = '4px';
-            ul.style.marginTop = '1rem';
-            ul.style.width = '100%';
-            ul.style.maxWidth = '600px';
+            Object.assign(ul.style, { listStyle: 'none', padding: '0', maxHeight: '200px', overflowY: 'auto', border: '1px solid #eee', borderRadius: '4px', marginTop: '1rem' });
 
             repos.forEach(repo => {
                 const li = document.createElement('li');
@@ -266,90 +294,22 @@
             popularReposList.appendChild(ul);
         }
 
-        async function displayCachedRepos(repos) {
-            cachedReposUl.innerHTML = ''; // Clear previous cached list
-            selectedPopularRepos.clear(); // Clear selections when re-displaying
+        function renderChart(canvasId, chartTitle, data) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return console.error(`Canvas with id ${canvasId} not found.`);
 
-            repos.forEach(repo => {
-                const li = document.createElement('li');
-                li.style.display = 'flex';
-                li.style.alignItems = 'center';
-                li.style.gap = '0.5rem';
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = `cached-repo-${repo.replace(/\//g, '-')}`;
-                checkbox.value = repo;
-                checkbox.checked = true; // Checked by default
-                selectedPopularRepos.add(repo); // Add to selected by default
-
-                const label = document.createElement('label');
-                label.htmlFor = checkbox.id;
-                label.textContent = repo;
-                label.style.flexGrow = '1';
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.style.marginLeft = 'auto';
-                deleteBtn.style.padding = '0.2rem 0.5rem';
-                deleteBtn.style.fontSize = '0.8rem';
-                deleteBtn.style.backgroundColor = '#dc3545';
-
-                checkbox.addEventListener('change', (event) => {
-                    if (event.target.checked) {
-                        selectedPopularRepos.add(repo);
-                    } else {
-                        selectedPopularRepos.delete(repo);
-                    }
-                    generateGraphFromCheckedRepos(); // Regenerate graph on checkbox change
-                });
-
-                deleteBtn.addEventListener('click', async () => {
-                    if (confirm(`Are you sure you want to delete ${repo}?`)) {
-                        try {
-                            const response = await fetch(`http://localhost:3000/api/delete-cached-repo`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({ repoFullName: repo })
-                            });
-                            if (!response.ok) {
-                                const errorData = await response.json();
-                                throw new Error(errorData.error || 'Failed to delete repository.');
-                            }
-                            // Re-fetch and display cached repos after deletion
-                            fetchPopularRepos();
-                        } catch (error) {
-                            alert(`Error deleting repo: ${error.message}`);
-                            console.error('Deletion failed:', error);
-                        }
-                    }
-                });
-
-                li.appendChild(checkbox);
-                li.appendChild(label);
-                li.appendChild(deleteBtn);
-                cachedReposUl.appendChild(li);
-            });
-        }
-
-        function renderChart(data) {
-            const languages = Object.keys(data);
-            const percentages = languages.map(lang => data[lang].percentage);
-
-            if (languageChart) {
-                languageChart.destroy();
+            if (chartInstances.has(canvasId)) {
+                chartInstances.get(canvasId).destroy();
             }
 
-            languageChart = new Chart(chartCanvas, {
+            const chart = new Chart(canvas.getContext('2d'), {
                 type: 'pie',
                 data: {
-                    labels: languages,
+                    labels: Object.keys(data),
                     datasets: [{
                         label: 'Language Usage',
-                        data: percentages,
-                        backgroundColor: generatePastelColors(languages.length),
+                        data: Object.values(data).map(d => d.percentage),
+                        backgroundColor: generatePastelColors(Object.keys(data).length),
                         borderColor: '#ffffff',
                         borderWidth: 2,
                         hoverOffset: 4
@@ -358,31 +318,13 @@
                 options: {
                     responsive: true,
                     plugins: {
-                        legend: {
-                            position: 'right',
-                        },
-                        title: {
-                            display: true,
-                            text: 'Language Usage Distribution',
-                            font: { size: 18 }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed !== null) {
-                                        label += context.parsed + '%';
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
+                        legend: { position: 'right' },
+                        title: { display: true, text: chartTitle, font: { size: 18 } },
+                        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed.toFixed(1)}%` } }
                     }
                 }
             });
+            chartInstances.set(canvasId, chart);
         }
 
         function generatePastelColors(count) {
