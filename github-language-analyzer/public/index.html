@@ -196,8 +196,8 @@
                             <label for="popular-repos-limit">표시 개수:</label>
                             <select id="popular-repos-limit" style="margin-left: 10px;">
                                 <option value="10" selected>10</option>
+                                <option value="50">50</option>
                                 <option value="100">100</option>
-                                <option value="1000">1000</option>
                             </select>
                         </div>
                         <button id="add-all-popular-btn" style="height:35px;width:130px;padding: 0.3rem 0.7rem; font-size: 0.85rem; margin:auto;margin-bottom: 1rem;">모두 추가</button>
@@ -253,14 +253,19 @@
         const cachedReposUl = document.getElementById('cached-repos-ul');
         const toggleAllCheckboxesBtn = document.getElementById('toggle-all-checkboxes'); // Added this line
         const deleteSelectedBtn = document.getElementById('delete-selected-btn'); // Added this line
+        const popularReposLimitSelect = document.getElementById('popular-repos-limit'); // Moved this line up
         const chartInstances = new Map();
         const CACHE_KEY = 'cachedRepos';
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetchPopularRepos();
+            fetchPopularRepos(popularReposLimitSelect.value); // Pass the initial selected value
             fetchMyRepos(); // Added this line
             loadCachedReposFromStorage();
             generateGraphFromCheckedRepos();
+        });
+
+        popularReposLimitSelect.addEventListener('change', (event) => {
+            fetchPopularRepos(event.target.value);
         });
 
         addBtn.addEventListener('click', handleAdd);
