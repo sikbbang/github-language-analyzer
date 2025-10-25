@@ -233,7 +233,7 @@
                             <button id="toggle-all-checkboxes" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">모두 선택</button>
                             <button id="delete-selected-btn" style="padding: 0.3rem 0.7rem; font-size: 0.85rem; background-color: #dc3545;">선택 삭제</button>
                         </div>
-                        <h2>저장된 Repositories</h2>
+                        <h2>Saved Repositories</h2>
                     </div>
                     <ul id="cached-repos-ul"></ul>
                 </div>              
@@ -380,8 +380,14 @@
 
             const label = document.createElement('label');
             label.htmlFor = checkbox.id;
-            label.textContent = repo;
+            label.textContent = repo; // 이 값은 최초 로드 시의 이름입니다.
             label.style.flexGrow = '1';
+
+            // 💡 수정된 로직: 더블 클릭 시 현재 label의 textContent를 oldRepoName으로 사용
+            label.addEventListener('dblclick', () => { 
+                // 🚨 주목: oldRepoName으로 'repo' 변수 대신 'labelElement.textContent'를 전달합니다.
+                enableInlineEdit(li, label, label.textContent); 
+            });
 
             const deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Delete';
@@ -539,6 +545,121 @@
                 colors.push(`hsl(${hue % 360}, 70%, 80%)`);
             }
             return colors;
+        }
+                // index.html 파일 <script> 태그 내에 추가
+
+        function enableInlineEdit(liElement, labelElement, oldRepoName) {
+            // 1. 기존 label을 숨깁니다.
+            labelElement.style.display = 'none';
+            
+            // 2. 새로운 입력 필드(input)를 생성합니다.
+            const inputField = document.createElement('input');
+            inputField.type = 'text';
+            inputField.value = oldRepoName;
+            Object.assign(inputField.style, {
+                flexGrow: '1',
+                padding: '0.2rem',
+                border: '1px solid #1877f2',
+                borderRadius: '4px',
+                fontSize: '1rem'
+            });
+
+            // 3. label 자리에 input을 삽입합니다.
+            liElement.insertBefore(inputField, labelElement);
+            inputField.focus();
+
+            // 이 변수는 handleUpdate가 성공적으로 실행되었는지 추적합니다.
+            let isSaving = false; 
+
+            const handleUpdate = () => {
+                // 이미 저장 중이거나 저장에 성공했다면 중복 실행을 막습니다.
+                if (isSaving) return; 
+
+                const newRepoName = inputField.value.trim();
+                
+                // 이름 변경이 없으면 바로 종료
+                if (newRepoName === oldRepoName) {
+                    exitEditMode(labelElement, inputField, oldRepoName);
+                    return;
+                }
+                
+                // 1단계: 유효성 검사
+                if (!/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(newRepoName)) {
+                    alert('유효하지 않은 저장소 이름 형식입니다: owner/repo. 원래 값으로 복구합니다.');
+                    exitEditMode(labelElement, inputField, oldRepoName);
+                    return; 
+                }
+
+                // 2단계: 중복 검사
+                const currentRepos = getCachedRepos();
+                if (currentRepos.includes(newRepoName)) {
+                    alert(`"${newRepoName}"은 이미 저장소 목록에 있습니다. 이름을 변경할 수 없습니다. 원래 값으로 복구합니다.`);
+                    exitEditMode(labelElement, inputField, oldRepoName);
+                    return; 
+                }
+                
+                // 3단계: 업데이트 실행
+                isSaving = true; // 저장 시작 플래그 설정
+                updateCachedRepoName(oldRepoName, newRepoName, labelElement, inputField);
+                // updateCachedRepoName 내부에서 exitEditMode가 호출되어 inputField가 제거됩니다.
+            };
+
+            // Enter 키로 저장
+            inputField.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleUpdate();
+                    // 엔터 키 입력 시, blur 이벤트가 곧바로 발생하지 않도록 이벤트를 명시적으로 중지합니다.
+                    // 그러나 blur는 키보드 이벤트가 아니므로, preventDefault만으로는 충분하지 않을 수 있습니다.
+                    // 하지만 handleUpdate() 성공 시 isSaving = true 로직이 2차 실행을 막아줍니다.
+                }
+            });
+
+            // 포커스를 잃으면 저장 (blur)
+            inputField.addEventListener('blur', handleUpdate); 
+        }
+
+        // 편집 모드를 종료하고 UI를 복원하는 함수
+        function exitEditMode(labelElement, inputField, newRepoName) {
+            labelElement.textContent = newRepoName; // 새 값으로 라벨 업데이트
+            labelElement.style.display = 'block';
+            inputField.remove();
+        }
+
+        // 실제 로컬 저장소 데이터를 수정하고 저장하는 함수
+        function updateCachedRepoName(oldName, newName, labelElement, inputField) {
+            const currentRepos = getCachedRepos();
+            if (oldName === newName) {
+                exitEditMode(labelElement, inputField, newName);
+                return;
+            }
+            
+            // 이미 새 이름이 목록에 존재하면 중복 오류
+            if (currentRepos.includes(newName)) {
+                alert(`"${newName}"은 이미 저장소 목록에 있습니다. 이름을 변경할 수 없습니다.`);
+                exitEditMode(labelElement, inputField, oldName); // 원래 이름으로 복원
+                return;
+            }
+
+            const updatedRepos = currentRepos.map(repo => 
+                repo === oldName ? newName : repo
+            );
+
+            // 1. 로컬 저장소 업데이트
+            saveCachedRepos(updatedRepos);
+
+            // 2. UI 및 체크박스 값 업데이트 (체크박스 ID와 Value도 변경해야 함)
+            const checkbox = document.getElementById(`cached-repo-${oldName.replace(/\//g, '-')}`);
+            if (checkbox) {
+                checkbox.value = newName;
+                checkbox.id = `cached-repo-${newName.replace(/\//g, '-')}`;
+            }
+            
+            // 3. 편집 모드 종료
+            exitEditMode(labelElement, inputField, newName);
+            alert(`저장소 이름이 "${oldName}"에서 "${newName}"으로 성공적으로 변경되었습니다.`);
+
+            // 4. 그래프 재생성
+            generateGraphFromCheckedRepos();
         }
     </script>
 

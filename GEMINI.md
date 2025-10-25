@@ -18,13 +18,14 @@
 - `server.js`: `/api/compare` 엔드포인트를 제공하는 Express 서버입니다.
 - `githubFetcher.js`: GitHub API에서 저장소 언어 데이터를 가져오는 모듈입니다.
 - `languageAnalyzer.js`: 여러 저장소의 언어 데이터를 취합하고 비율을 계산하는 모듈입니다.
-- `.env`: GitHub API 토큰을 저장하는 환경 변수 파일입니다.
+- `.env`: GitHub API 토큰과 같은 환경 변수를 저장하는 파일입니다. `dotenv` 라이브러리를 통해 로드됩니다.
+- `popular_repos.db`: 인기 저장소 목록을 캐싱하는 SQLite 데이터베이스 파일입니다.
 
 ## 3. 실행 방법
 
 1.  **의존성 설치:**
     ```bash
-    npm install express cors dotenv axios
+    npm install express cors dotenv axios sqlite
     ```
 
 2.  **환경 변수 설정:**
@@ -40,7 +41,7 @@
     서버가 3000번 포트에서 실행됩니다.
 
 4.  **애플리케이션 사용:**
-    웹 브라우저에서 `index.html` 파일을 열어주세요.
+    웹 브라우저에서 `http://localhost:3000`으로 접속하세요.
 
 ## 4. API 엔드포인트
 
@@ -69,3 +70,39 @@
 - **Error Responses:**
     - `400 Bad Request`: `repos` 쿼리 파라미터가 없거나 유효한 저장소를 찾지 못한 경우.
     - `500 Internal Server Error`: 서버 내부 오류 또는 GitHub API 호출에 실패한 경우.
+
+### GET /api/popular-repos
+
+인기 GitHub 저장소 목록을 반환합니다.
+
+- **Query Parameters:**
+    - `limit` (optional): 반환할 저장소의 최대 개수. 기본값은 10입니다.
+- **Example Request:**
+    `/api/popular-repos?limit=5`
+- **Success Response (200):**
+    - **Content:** 인기 저장소의 `full_name` 목록을 담은 JSON 배열.
+    ```json
+    [
+      "owner/repo1",
+      "owner/repo2"
+    ]
+    ```
+- **Error Responses:**
+    - `500 Internal Server Error`: 서버 내부 오류 또는 데이터베이스 조회 실패.
+
+### GET /api/my-repos
+
+인증된 사용자의 저장소 목록을 반환합니다.
+
+- **Example Request:**
+    `/api/my-repos`
+- **Success Response (200):**
+    - **Content:** 사용자의 저장소 목록을 담은 JSON 배열.
+    ```json
+    [
+      "owner/my-repo1",
+      "owner/my-repo2"
+    ]
+    ```
+- **Error Responses:**
+    - `500 Internal Server Error`: 서버 내부 오류 또는 GitHub API 호출 실패.
