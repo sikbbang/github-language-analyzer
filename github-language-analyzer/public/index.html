@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Language Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0;
+            padding: 2rem;
+            background-color: #f0f2f5;
+        }
+        h1 {
+            color: #1c1e21;
+        }
+        #controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            width: 100%;
+            max-width: 600px;
+        }
+        #repo-input { 
+            flex-grow: 1;
+            padding: 0.75rem;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        button { 
+            padding: 0.75rem 1.5rem; 
+            border: none;
+            border-radius: 6px;
+            background-color: #1877f2;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #166fe5;
+        }
+        #chart-container { 
+            width: 100%; 
+            max-width: 700px; 
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>GitHub Repository Language Comparison</h1>
+    <p>Enter comma-separated GitHub repositories (e.g., facebook/react, vuejs/vue) and click "Compare".</p>
+    
+    <div id="controls">
+        <input type="text" id="repo-input" placeholder="owner/repo, owner2/repo2">
+        <button id="compare-btn">Compare</button>
+    </div>
+
+    <div id="chart-container">
+        <canvas id="language-chart"></canvas>
+    </div>
+
+    <script>
+        const repoInput = document.getElementById('repo-input');
+        const compareBtn = document.getElementById('compare-btn');
+        const chartCanvas = document.getElementById('language-chart').getContext('2d');
+        let languageChart = null;
+
+        compareBtn.addEventListener('click', handleCompare);
+        repoInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                handleCompare();
+            }
+        });
+
+        async function handleCompare() {
+            const repos = repoInput.value.trim();
+            if (!repos) {
+                alert('Please enter repositories to compare.');
+                return;
+            }
+
+            compareBtn.disabled = true;
+            compareBtn.textContent = 'Comparing...';
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/compare?repos=${repos}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch data.');
+                }
+                const data = await response.json();
+                renderChart(data);
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                console.error('Comparison failed:', error);
+            } finally {
+                compareBtn.disabled = false;
+                compareBtn.textContent = 'Compare';
+            }
+        }
+
+        function renderChart(data) {
+            const languages = Object.keys(data);
+            const percentages = languages.map(lang => data[lang].percentage);
+
+            if (languageChart) {
+                languageChart.destroy();
+            }
+
+            languageChart = new Chart(chartCanvas, {
+                type: 'pie',
+                data: {
+                    labels: languages,
+                    datasets: [{
+                        label: 'Language Usage',
+                        data: percentages,
+                        backgroundColor: generatePastelColors(languages.length),
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Language Usage Distribution',
+                            font: { size: 18 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function generatePastelColors(count) {
+            const colors = [];
+            let hue = Math.random() * 360;
+            for (let i = 0; i < count; i++) {
+                hue += 360 / count;
+                colors.push(`hsl(${hue % 360}, 70%, 80%)`);
+            }
+            return colors;
+        }
+    </script>
+
+</body>
+</html>
