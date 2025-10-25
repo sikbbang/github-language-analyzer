@@ -143,12 +143,36 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             height:660px;
         }
+
+        @media (max-width: 1300px) {
+            #top-section-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            #repo-lists-container, #chart-container {
+                width: 100%;
+                min-width: unset; /* Remove min-width constraint */
+                max-width: 600px; /* Constrain width for smaller screens */
+            }
+            #chart-container {
+                height: 400px; /* Adjust height for smaller screens */
+            }
+        }
         .top {
             display: flex;
         }
         .bottom {
             display: flex;
             justify-content: center;
+        }
+        @media (max-width: 950px) {
+            .top {
+                flex-direction: column;
+                align-items: center;
+            }
+            #popular-repos-section, #my-repos-section {
+                width: 100%;
+            }
         }
     </style>
 </head>
