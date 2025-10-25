@@ -40,7 +40,7 @@
         }
         button { 
             margin: 2px;
-            width:70px;
+            width:80px;
             padding: 0.75rem 1.5rem; 
             border: none;
             border-radius: 6px;
@@ -58,6 +58,7 @@
             cursor: not-allowed;
         }
         #top-section-container {
+            margin-top: 20px;
             display: flex;
             gap: 2rem;
             width: 100%;
@@ -152,8 +153,8 @@
 </head>
 <body>
 
-    <h1>GitHub Repository Language Comparison</h1>
-    <p>Enter comma-separated GitHub repositories (e.g., facebook/react, vuejs/vue) and click "Compare".</p>
+    <h1>Github 저장소 언어 분포</h1>
+    <p>Enter GitHub repositorie (e.g., facebook/react, vuejs/vue)</p>
     
     <div id="controls">
         <input type="text" id="repo-input" placeholder="owner/repo, owner2/repo2">
@@ -179,10 +180,12 @@
             </div>
             <div class="bottom">
                 <div id="cached-repos-list">
-                    <div id="cached-repos-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-right: 130px;">
-                        <button id="toggle-all-checkboxes" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">Toggle All</button>
-                        <button id="delete-selected-btn" style="padding: 0.3rem 0.7rem; font-size: 0.85rem; background-color: #dc3545;">Delete Selected</button>
-                        <h2>Currently Cached Repositories</h2>
+                    <div id="cached-repos-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-right: 210px;">
+                        <div style="display: flex;flex-direction: column-reverse;">
+                            <button id="toggle-all-checkboxes" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">모두 선택</button>
+                            <button id="delete-selected-btn" style="padding: 0.3rem 0.7rem; font-size: 0.85rem; background-color: #dc3545;">선택 삭제</button>
+                        </div>
+                        <h2>저장된 Repositories</h2>
                     </div>
                     <ul id="cached-repos-ul"></ul>
                 </div>              
@@ -222,11 +225,11 @@
             const reposToDelete = Array.from(checkboxes).map(cb => cb.value);
 
             if (reposToDelete.length === 0) {
-                alert('No repositories selected to delete.');
+                alert('선택된 Repositorie가 없습니다.');
                 return;
             }
 
-            if (confirm(`Are you sure you want to remove ${reposToDelete.length} selected repositories?`)) {
+            if (confirm(`${reposToDelete.length}개의 선택된 Repositorie를 삭제하시겠습니까?`)) {
                 let currentRepos = getCachedRepos();
                 const updatedRepos = currentRepos.filter(repo => !reposToDelete.includes(repo));
                 saveCachedRepos(updatedRepos);
@@ -291,7 +294,7 @@
             checkbox.addEventListener('change', generateGraphFromCheckedRepos);
 
             deleteBtn.addEventListener('click', () => {
-                if (confirm(`Are you sure you want to remove ${repo}?`)) {
+                if (confirm(`"${repo}"를 삭제하시겠습니까?`)) {
                     const currentRepos = getCachedRepos();
                     saveCachedRepos(currentRepos.filter(r => r !== repo));
                     li.remove();
