@@ -262,7 +262,14 @@
             fetchMyRepos(); // Added this line
             loadCachedReposFromStorage();
             generateGraphFromCheckedRepos();
-        });
+            timerId = setInterval(function() {
+                if (document.querySelector('#popular-repos-list ul li') != null) {
+                    clearInterval(timerId); 
+                } else{
+                    fetchPopularRepos(popularReposLimitSelect.value); // Pass the initial selected value
+                }
+            }, 300)
+        })
 
         popularReposLimitSelect.addEventListener('change', (event) => {
             fetchPopularRepos(event.target.value);
@@ -480,7 +487,9 @@
         }
 
         function displayReposInList(listElement, repos) {
-            listElement.innerHTML = '';
+            if (repos.length > 0){
+                listElement.innerHTML = '';
+            }
             const ul = document.createElement('ul');
             Object.assign(ul.style, { listStyle: 'none', padding: '0', maxHeight: '200px', overflowY: 'auto', border: '1px solid #eee', borderRadius: '4px', marginTop: '1rem' });
 
