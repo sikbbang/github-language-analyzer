@@ -1,97 +1,97 @@
-# GitHub Repository Language Analyzer
+# GitHub 저장소 언어 분석기
 
-## 1. Project Overview
+## 1. 프로젝트 개요
 
-This project is a web application designed to analyze and compare the language usage across multiple GitHub repositories. Users can input repository names, view popular repositories, and see a visual representation of the language distribution in their selected repositories.
+이 프로젝트는 여러 GitHub 저장소의 언어 사용량을 분석하고 비교하기 위해 설계된 웹 애플리케이션입니다. 사용자는 저장소 이름을 입력하고, 인기 있는 저장소를 확인하며, 선택한 저장소의 언어 분포를 시각적으로 볼 수 있습니다.
 
-## 2. Key Features
+## 2. 주요 기능
 
-*   Compare language usage across multiple GitHub repositories.
-*   Visualize language distribution using Chart.js.
-*   Browse popular GitHub repositories.
-*   View an authenticated user's own repositories.
-*   Cache selected repositories for quick access.
+*   여러 GitHub 저장소의 언어 사용량 비교.
+*   Chart.js를 사용한 언어 분포 시각화.
+*   인기 있는 GitHub 저장소 탐색.
+*   인증된 사용자의 개인 저장소 보기.
+*   빠른 접근을 위해 선택한 저장소 캐싱.
 
-## 3. Tech Stack
+## 3. 기술 스택
 
-*   **Frontend**: Vanilla JavaScript, HTML, CSS (with Chart.js for data visualization)
-*   **Backend**: Node.js with Express.js
-*   **Data Source**: GitHub REST API (v3)
-*   **Database**: SQLite (for caching popular repositories)
+*   **프런트엔드**: Vanilla JavaScript, HTML, CSS (데이터 시각화를 위한 Chart.js 포함)
+*   **백엔드**: Node.js (Express.js 사용)
+*   **데이터 소스**: GitHub REST API (v3)
+*   **데이터베이스**: SQLite (인기 저장소 캐싱용)
 
-## 4. Project Structure
+## 4. 프로젝트 구조
 
 ```
 github-language-analyzer/
-├── .env                  # Environment variables (e.g., GitHub Token)
-├── githubFetcher.js      # Module for fetching data from GitHub API
-├── languageAnalyzer.js   # Module for analyzing language statistics
-├── package.json          # Project dependencies and scripts
-├── server.js             # Express.js backend server
+├── .env                  # 환경 변수 (예: GitHub 토큰)
+├── githubFetcher.js      # GitHub API에서 데이터를 가져오는 모듈
+├── languageAnalyzer.js   # 언어 통계를 분석하는 모듈
+├── package.json          # 프로젝트 의존성 및 스크립트
+├── server.js             # Express.js 백엔드 서버
 └── public/
-    ├── index.html        # Frontend user interface
-    └── pngegg.png        # Image asset
+    ├── index.html        # 프런트엔드 사용자 인터페이스
+    └── pngegg.png        # 이미지 자산
 ```
 
-## 5. Getting Started
+## 5. 시작하기
 
-Follow these steps to set up and run the project locally.
+프로젝트를 로컬에서 설정하고 실행하려면 다음 단계를 따르세요.
 
-### Prerequisites
+### 전제 조건
 
-Make sure you have Node.js and npm installed.
+Node.js 및 npm이 설치되어 있는지 확인하세요.
 
-### Installation
+### 설치
 
-1.  Navigate to the project directory:
+1.  프로젝트 디렉토리로 이동합니다:
     ```bash
     cd github-language-analyzer
     ```
-2.  Install the dependencies:
+2.  의존성을 설치합니다:
     ```bash
     npm install
     ```
 
-### Environment Variables
+### 환경 변수
 
-1.  Create a `.env` file in the `github-language-analyzer` directory.
-2.  Add your GitHub Personal Access Token and GitHub Username to the `.env` file:
+1.  `github-language-analyzer` 디렉토리에 `.env` 파일을 생성합니다.
+2.  `.env` 파일에 GitHub 개인 액세스 토큰과 GitHub 사용자 이름을 추가합니다:
     ```
     GITHUB_TOKEN=your_personal_access_token
     GITHUB_USERNAME=your_github_username
     ```
-    *   **Note**: Your GitHub Personal Access Token needs `repo` scope to fetch private repositories and `user` scope to fetch user repositories.
+    *   **참고**: GitHub 개인 액세스 토큰은 비공개 저장소를 가져오려면 `repo` 범위가, 사용자 저장소를 가져오려면 `user` 범위가 필요합니다.
 
-### Running the Server
+### 서버 실행
 
-Start the Express.js server:
+Express.js 서버를 시작합니다:
 
 ```bash
 npm start
 ```
-The server will start on `http://localhost:3000`.
+서버는 `http://localhost:3000`에서 시작됩니다.
 
-### Accessing the Application
+### 애플리케이션 접근
 
-Open `public/index.html` in your web browser to use the application.
+웹 브라우저에서 `public/index.html` 파일을 열어 애플리케이션을 사용하세요.
 
-## 6. API Endpoints
+## 6. API 엔드포인트
 
-The backend provides the following API endpoints:
+백엔드는 다음 API 엔드포인트를 제공합니다:
 
 ### `GET /api/compare`
 
-Compares language usage across multiple GitHub repositories.
+여러 GitHub 저장소의 언어 사용량을 비교합니다.
 
-*   **Query Parameters**:
-    *   `repos` (required): A comma-separated list of repositories in `owner/repo` format (e.g., `facebook/react,vuejs/vue`).
+*   **쿼리 파라미터**: 
+    *   `repos` (필수): `owner/repo` 형식의 쉼표로 구분된 저장소 목록 (예: `facebook/react,vuejs/vue`).
 
-*   **Example Request**:
+*   **요청 예시**:
     ```
     GET /api/compare?repos=facebook/react,vuejs/vue
     ```
 
-*   **Success Response (200)**:
+*   **성공 응답 (200)**:
     ```json
     {
       "JavaScript": {
@@ -105,23 +105,23 @@ Compares language usage across multiple GitHub repositories.
     }
     ```
 
-*   **Error Responses**:
-    *   `400 Bad Request`: Missing `repos` parameter or no valid repositories found.
-    *   `500 Internal Server Error`: Server error or GitHub API call failure.
+*   **오류 응답**:
+    *   `400 Bad Request`: `repos` 파라미터가 없거나 유효한 저장소를 찾을 수 없는 경우.
+    *   `500 Internal Server Error`: 서버 오류 또는 GitHub API 호출 실패.
 
 ### `GET /api/popular-repos`
 
-Fetches a list of popular GitHub repositories.
+인기 있는 GitHub 저장소 목록을 가져옵니다.
 
-*   **Query Parameters**:
-    *   `limit` (optional): The number of popular repositories to return (default: 10).
+*   **쿼리 파라미터**:
+    *   `limit` (선택 사항): 반환할 인기 저장소의 수 (기본값: 10).
 
-*   **Example Request**:
+*   **요청 예시**:
     ```
     GET /api/popular-repos?limit=50
     ```
 
-*   **Success Response (200)**:
+*   **성공 응답 (200)**:
     ```json
     [
       "owner1/repo1",
@@ -132,14 +132,14 @@ Fetches a list of popular GitHub repositories.
 
 ### `GET /api/my-repos`
 
-Fetches a list of repositories for the authenticated GitHub user (based on `GITHUB_USERNAME` in `.env`).
+인증된 GitHub 사용자(`.env`의 `GITHUB_USERNAME` 기준)의 저장소 목록을 가져옵니다.
 
-*   **Example Request**:
+*   **요청 예시**:
     ```
     GET /api/my-repos
     ```
 
-*   **Success Response (200)**:
+*   **성공 응답 (200)**:
     ```json
     [
       "myuser/myrepo1",
