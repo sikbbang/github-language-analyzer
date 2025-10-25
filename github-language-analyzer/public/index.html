@@ -136,6 +136,7 @@
             padding: 1.5rem;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            height:660px;
         }
         .top {
             display: flex;
@@ -175,25 +176,27 @@
             </div>
             <div class="bottom">
                 <div id="cached-repos-list">
-                    <h2>Currently Cached Repositories</h2>
+                    <div id="cached-repos-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding-right: 130px;">
+                        <button id="toggle-all-checkboxes" style="padding: 0.3rem 0.7rem; font-size: 0.85rem;">Toggle All</button>
+                        <h2>Currently Cached Repositories</h2>
+                    </div>
                     <ul id="cached-repos-ul"></ul>
-                </div>
+                </div>              
             </div>
-
         </div>
 
         <div id="chart-container">
             <canvas id="language-chart"></canvas>
-            <div id="chart-message" style="text-align: center; padding: 1rem;"></div>
+            <div id="chart-message" style="text-align: center; padding: 1rem; padding-top: 130px;"></div>
         </div>
     </div>
-
     <script>
         const repoInput = document.getElementById('repo-input');
         const addBtn = document.getElementById('add-btn');
         const popularReposList = document.getElementById('popular-repos-list');
         const myReposList = document.getElementById('my-repos-list'); // Added this line
         const cachedReposUl = document.getElementById('cached-repos-ul');
+        const toggleAllCheckboxesBtn = document.getElementById('toggle-all-checkboxes'); // Added this line
         const chartInstances = new Map();
         const CACHE_KEY = 'cachedRepos';
 
@@ -206,6 +209,7 @@
 
         addBtn.addEventListener('click', handleAdd);
         repoInput.addEventListener('keypress', e => e.key === 'Enter' && handleAdd());
+        toggleAllCheckboxesBtn.addEventListener('click', toggleAllCheckboxes); // Added this line
 
         function handleAdd() {
             const customRepos = repoInput.value.trim().split(',').map(repo => repo.trim()).filter(Boolean);
@@ -270,6 +274,13 @@
             li.appendChild(label);
             li.appendChild(deleteBtn);
             cachedReposUl.appendChild(li);
+        }
+
+        function toggleAllCheckboxes() { // Added this function
+            const checkboxes = document.querySelectorAll('#cached-repos-ul input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => cb.checked = !allChecked);
+            generateGraphFromCheckedRepos();
         }
 
         async function generateGraphFromCheckedRepos() {
