@@ -20,18 +20,20 @@
 Node.js 및 npm이 설치되어 있는지 확인하세요.
 
 
-1.  프로젝트 디렉토리로 이동합니다:
+1.  저장소 클론:
     ```bash
-    cd src
+    git clone https://github.com/sikbbang/github-language-analyzer.git
+    cd github-language-analyzer
     ```
-2.  의존성을 설치합니다:
+2.  의존성 설치:
     ```bash
+    cd github-language-analyzer/src
     npm install
     ```
 
 ### 환경 변수 설정
 
-1.  `github-language-analyzer` 디렉토리에 `.env` 파일을 생성합니다.
+1.  루트에 `.env` 파일을 생성합니다.
 2.  `.env` 파일에 GitHub 개인 액세스 토큰과 GitHub 사용자 이름을 추가합니다:
     ```
     GITHUB_TOKEN=your_personal_access_token
@@ -56,6 +58,7 @@ npm start
 *   **데이터 소스**: GitHub REST API (v3)
 *   **데이터베이스**: SQLite (인기 저장소 캐싱용)
 *   **LocalStorage**: Repositorie 저장용
+*   **Heroku**: 배포 및 호스팅
 
 ## 5. 스크린샷 또는 데모 영상(선택)
 ![alt text](image.png)

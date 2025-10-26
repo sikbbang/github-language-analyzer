@@ -2,9 +2,8 @@
 
 ## 프로젝트 구조
 ```
-/WEB                          <-- 프로젝트 루트 디렉토리
-├── github-language-analyzer/ <-- 프로젝트 디렉토리
-│   ├── node_modules/         <-- [의존성] 설치된 Node.js 패키지 (Express, Axios 등)
+/github-language-analyzer     <-- 프로젝트 루트 디렉토리
+├── src/                      <-- 프로젝트 디렉토리
 │   ├── .env                  <-- [설정] GitHub 토큰, 사용자 이름 (githubFetcher.js, server.js에서 사용)
 │   ├── popular_repos.db      <-- [데이터] 인기 저장소 캐시용 SQLite 데이터베이스 파일
 │   ├── package.json          <-- [설정] 프로젝트 의존성 관리
@@ -13,12 +12,16 @@
 │   │   ├── index.html        <-- [프론트엔드] UI, Vanilla.js, Chart.js 로직
 │   │   └── pngegg.png        <-- [자료] UI에 사용되는 이미지 아이콘
 │   ├── server.js             <-- [백엔드] Express 서버, 라우팅, DB 관리
+│   ├── start.js              <-- [설정] 서버 실행 전 의존성 설치 확인 + 서버 시작 스크립트
 │   ├── githubFetcher.js      <-- [백엔드] GitHub API 통신 (Repository Data, User Repos, Languages)
 │   └── languageAnalyzer.js   <-- [분석] 언어 사용량 비율 계산 로직
+├── .env                      <-- [설정] GitHub 토큰, 사용자 이름 (githubFetcher.js, server.js에서 사용)
 ├── .gitignore                <-- [설정] Git 추적 제외 파일 목록 (node_modules, .env, *.db 등)
 ├── DEVELOPMENT_LOG.md        <-- [문서] 개발 과정 기록
 ├── GEMINI.md                 <-- [AI 컨텍스트] Gemini CLI/AI 개발 도구를 위한 시스템 명령 및 프로젝트 정보
 ├── image.png                 <-- [자료] 프로젝트 관련 이미지
+├── package.json              <-- [설정] 실행 스크립트 정의
+├── package-lock.json         <-- [의존성] 패키지 버전 잠금 정보
 └── README.md                 <-- [문서] 프로젝트 소개 및 사용 설명서
 ```
 
@@ -357,6 +360,18 @@
             이 수정으로 인해, 화면이 작아질 때마다 요소들이 단계적으로 수직으로 쌓여 어떤 해상도에서도 어색함 없이 정보를 제공할 수 있게 됩니다.
             ```
 
+    - 배포 및 호스팅
+        - Heroku사용
+            ```
+            호스팅은 Heroku사용할거야 전체 파일들 수정해줘
+
+            package.json 및 Procfile 추가: Heroku 배포를 위한 필수 파일을 생성했습니다.
+            index.html 수정: 모든 http://localhost:3000 URL을 **상대 경로(/api/...)**로 변경하여 Heroku 배포 환경에서 올바른 호스트를 사용하도록 했습니다.
+            server.js 수정: Heroku가 제공하는 포트(process.env.PORT)를 사용하도록 코드를 확인했으며, 이는 기존에도 잘 설정되어 있었습니다.
+            모든 파일 수정이 완료되었으며, package.json과 Procfile이 추가되어 Heroku에서 바로 배포할 수 있습니다. Heroku에 배포하기 전에, **GitHub API 토큰(GITHUB_TOKEN)**과 **사용자 이름(GITHUB_USERNAME)**을 Heroku의 Config Vars에 설정해야 합니다.
+            ```
+
+
 ## 학습 내용
 1. 풀스택 데이터 파이프라인 구축
 - 클라이언트-서버 연동: HTML/JavaScript 클라이언트와 Node.js/Express 서버 간의 API 통신(RESTful GET 요청) 구현.
@@ -369,6 +384,10 @@
 - Chart.js를 이용한 데이터 시각화: 분석된 언어 분포 데이터를 파이 차트로 시각화하는 방법 (파일: index.html).
 - 반응형 레이아웃: CSS @media 쿼리를 활용하여 화면 크기(특히 1350px, 950px 미만)에 따라 저장소 목록과 차트 배치를 유연하게 변경하는 반응형 웹 디자인 기법 구현.
 - UX/UI 개선: 더블 클릭 편집, 일괄 선택/삭제, 작업 성공 알림 등 사용자 편의 기능을 구현하여 애플리케이션의 사용성을 높이는 방법.
+4. 클라우드 배포 및 환경 대응
+- Heroku 환경 설정: 클라우드 플랫폼 Heroku에 애플리케이션을 배포하기 위한 package.json 및 Procfile 정의.
+- 동적 포트 바인딩: Heroku 환경에서 제공하는 process.env.PORT 환경 변수를 사용하여 서버가 동적으로 포트를 할당받도록 설정.
+- 상대 경로 처리: 클라이언트(index.html)의 모든 API 요청 URL을 http://localhost:3000/... 대신 **상대 경로(/api/...)**로 변경하여 배포 환경의 호스트 주소에 자동으로 적응하도록 구현.
 
 ## 최종 결과물 평가
 - GitHub Api 연동, DB 및 LocalStorage, Chart.js 시각화 등 목표 기능이 성공적으로 구현됨
