@@ -4,8 +4,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import dotenv from 'dotenv';
-// NODE_ENV가 production이 아닌 경우에만 .env 로드
-if (process.env.NODE_ENV !== 'production') {
+const NODE_ENV = process.env.NODE_ENV || "development";
+if (NODE_ENV !== 'production') {
   dotenv.config({ path: path.resolve(__dirname, '../.env') });
 }
 
