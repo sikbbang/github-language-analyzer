@@ -57,8 +57,8 @@ npm start
 *   **백엔드**: Node.js (Express.js 사용)
 *   **데이터 소스**: GitHub REST API (v3)
 *   **데이터베이스**: SQLite (인기 저장소 캐싱용)
-*   **LocalStorage**: Repositorie 저장용
-*   **Heroku**: 배포 및 호스팅
+*   **브라우저 저장소**: LocalStorage(Repositorie 저장용)
+*   **배포 및 호스팅**: Heroku
 
 ## 5. 스크린샷 또는 데모 영상(선택)
 ![alt text](image.png)
