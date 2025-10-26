@@ -1,5 +1,6 @@
 /src/.env
-/src/node_modules
+node_modules/
 /src/server.log
 /src/nohup.out
 /src/popular_repos.db
+/.env
